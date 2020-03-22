@@ -12,12 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import pw.valaria.requirementsprocessor.defaults.IntegerProcessor;
-import pw.valaria.requirementsprocessor.defaults.ItemStackProcessor;
-import pw.valaria.requirementsprocessor.defaults.JavascriptProcessor;
-import pw.valaria.requirementsprocessor.defaults.PermissionProcessor;
-import pw.valaria.requirementsprocessor.defaults.StringProcessor;
-import pw.valaria.requirementsprocessor.defaults.VaultProcessor;
+import pw.valaria.requirementsprocessor.defaults.*;
 
 public final class RequirementsUtil {
 
@@ -33,7 +28,8 @@ public final class RequirementsUtil {
         registerProcessor("STRING_EQUALS", new StringProcessor(StringProcessor.StringCheckType.STRING_EQUALS));
         registerProcessor("STRING_EQUALS_IGNORECASE", new StringProcessor(StringProcessor.StringCheckType.STRING_EQUALS_IGNORECASE));
         registerProcessor("STRING_CONTAINS", new StringProcessor(StringProcessor.StringCheckType.STRING_CONTAINS));
-
+        registerProcessor("REGEX", new RegexProcessor());
+        
         // Perms
         registerProcessor("HAS_PERMISSION", new PermissionProcessor());
 
@@ -114,15 +110,21 @@ public final class RequirementsUtil {
             if (requirementType == null)
                 throw new IllegalArgumentException(requirementsKey + " does not have a requirement-type set!");
 
+            boolean reverse = requirementType.startsWith("!");
+            requirementType = requirementsKey.replaceFirst("!", "");
+            
             RequirementsProcessor requirementsProcessor = requirementsProcessors.get(requirementType);
 
             if (requirementsProcessor == null)
                 throw new IllegalArgumentException(requirementType + " is not registered as a valid requirement type");
 
             try {
-                if (!requirementsProcessor.checkMatch(player, requirementSection)) {
+                boolean result = requirementsProcessor.checkMatch(player, requirementSection);
+                if (!reverse)
+                    result = !result;
+                
+                if (result)
                     return false;
-                }
             } catch (Exception ex){
                 throw new RuntimeException("An error occured while processing the requirement " + requirementsKey, ex);
             }
